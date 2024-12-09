@@ -134,7 +134,7 @@
         var survey_trials = randomized_textures.map(function (texture) {
             return {
                 type: jsPsychSurveyText,
-                questions: [{ prompt: "What are your thoughts on texture " + texture + "?" }],
+                questions: [{ prompt: "Rating for " + texture + "." }],
                 data: {
                     texture: texture, // Save the texture value for this trial
                     list_name: list_name, // Include the list name in the trial data
