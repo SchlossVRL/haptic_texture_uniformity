@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Schloss Lab Experiment</title>
+    <!-- Load in the jspsych tools, plugins,and layout -->
+    <script src="jsPsych/jspsych.js"></script>
+
+    <script src="jsPsych/jspsych-image-slider-response_InstrMAS.js"></script>
+    <script src="jsPsych/plugin-image-slider-response.js"></script>
+    <script src="jsPsych/plugin-html-slider-response.js"></script>
+    <script src="jsPsych/jspsych-image-slider-responseKM.js"></script>
+    <script src="jsPsych/plugin-html-button-response.js"></script>
+    <script src="jsPsych/plugin-html-keyboard-response.js"></script>
+    <script src="jsPsych/plugin-survey-multi-select.js"></script>
+    <script src="jsPsych/plugin-survey-text.js"></script>
+    <script src="jsPsych/plugin-fullscreen.js"></script>
+    <script src="jsPsych/plugin-preload.js"></script>
+    <script src="TextureLists.js"></script>
+    <link href="jsPsych/jspsych.css" rel="stylesheet" type="text/css">
+    <script src="https://unpkg.com/@jspsych-contrib/plugin-pipe"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.1/underscore-min.js"></script>
+
+</head>
+
+<body>
+
+
+    <!--------------------- Here is where the experiment is created ------------------------------------------->
+    <script>
+
+        var jsPsych = initJsPsych();
+        var timeline = [];
+
+        const subject_id = jsPsych.randomization.randomID(10);
+        const filename = `${subject_id}.csv`;
+
+        // Set background color to gray //
+        document.body.style.backgroundColor = "rgb(128,128,128)"
+
+        var preload = {
+            type: jsPsychPreload,
+            //images: image_paths
+        };
+        jsPsych.data.addProperties({
+            subject_id: subject_id
+        });
+
+        timeline.push(preload);
+
+        // Initial welcome screen
+        var initial_screen = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `<div style='text-align:center; font-size:20px; line-height:25px; width: 1200px;'>
+                Welcome to our experiment! <br>
+                <br>At the bottom of this screen, you will see a button that says 'Begin Experiment.
+                <br>Please only click that button when you are ready to complete the 25 minute experiment in one sitting. <br>
+                <br> Once you click that button, it will not be possible to restart the experiment. <br><br>`,
+            choices: ['Begin Experiment']
+        }
+        timeline.push(initial_screen);
+
+        timeline.push({
+            type: jsPsychFullscreen,
+            fullscreen_mode: true,
+        });
+
+        // Prompt for participant ID
+        var participant_id = prompt("Please enter the participant ID:");
+
+        // Ensure input is valid
+        if (!participant_id || isNaN(participant_id)) {
+            alert("Invalid participant ID! Please reload the page and enter a numeric ID.");
+            throw new Error("Invalid participant ID.");
+        }
+
+        // Calculate the condition index
+        var condition_index = parseInt(participant_id) % 3;
+
+        // Assign the correct list based on the condition index
+        var textures;
+        var list_name;
+        if (condition_index === 0) {
+            textures = textures_list1;
+            list_name = "textures_list1";
+        } else if (condition_index === 1) {
+            textures = textures_list2;
+            list_name = "textures_list2";
+        } else {
+            textures = textures_list3;
+            list_name = "textures_list3";
+        }
+
+        // Randomize the texture list
+        var randomized_textures = jsPsych.randomization.shuffle(textures);
+
+        // Add participant ID and list name to data
+        jsPsych.data.addProperties({
+            participant_id: participant_id,
+            list_name: list_name
+        });
+
+        // Introductory trial to display the list name
+        var intro_trial = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<p>You have been assigned to <strong>${list_name}</strong>.</p>
+               <p>Press any key to begin the experiment.</p>`,
+        };
+
+        // Generate survey trials
+        var survey_trials = randomized_textures.map(function (texture) {
+            return {
+                type: jsPsychSurveyText,
+                questions: [{ prompt: "What are your thoughts on texture " + texture + "?" }],
+                data: {
+                    texture: texture, // Save the texture value for this trial
+                    list_name: list_name, // Include the list name in the trial data
+                    participant_id: participant_id // Include the participant ID for each trial
+                }
+            };
+        });
+
+        timeline.push(intro_trial);
+
+        timeline.push(...survey_trials);
+
+        const save_data = {
+            type: jsPsychPipe,
+            action: "save",
+            experiment_id: "hz0RulQvOMfl",
+            filename: filename,
+            wait_message: 'Please wait a moment while the next page loads.',
+            data_string: () => jsPsych.data.get().csv(),
+            on_finish: (data) => {
+                console.log("Data saved:", data);
+            }
+        };
+
+        timeline.push(save_data);
+
+        // Final message at the end of the experiment
+        var debrief_script = {
+            type: jsPsychHtmlButtonResponse,
+            stimulus: `
+            <div style='text-align:center; margin-left=-100px; font-size:20px; line-height:25px; width: 1200px;'>Great Job! You're done rating all textures!<br></br>
+                <br> The goal of this study is to understand how people form associations between textures and concepts.
+                <br> To do this, we need to collect data on how people view the uniformity of textures. 
+                <br> Today you rated a subset of the textures we are studying. Other participants will rate different sets.`,
+            choices: ['Next'],
+        };
+
+        timeline.push(debrief_script);
+
+        var thank_you = {
+            type: jsPsychHtmlKeyboardResponse,
+            stimulus: `<div style="width:800px">
+                <br><br> Press the 'esc' key to end the experiment and exit full screen.`,
+            choices: 'ALL_KEYS',
+        }
+
+        timeline.push(thank_you);
+
+        timeline.push({
+            type: jsPsychFullscreen,
+            fullscreen_mode: false,
+        })
+
+
+        jsPsych.run(timeline);
+
+
+    </script>
+</body>
+
+</html> 
