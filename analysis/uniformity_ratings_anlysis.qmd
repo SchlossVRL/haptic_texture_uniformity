@@ -1,0 +1,93 @@
+---
+title: "Haptic Texture Uniformity Ratings"
+format: html
+editor: visual
+---
+
+### Load packages
+
+```{r}
+# List of packages
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "ggimage","dplyr","tidyverse","knitr")
+
+
+```
+
+```{r}
+
+install_and_load_packages <- function(packages) {
+  for(package in packages) {
+    if(!require(package, character.only = TRUE)) {
+      install.packages(package, dependencies = TRUE)
+      library(package, character.only = TRUE)
+    }
+  }
+}
+
+# Call the function with the list of packages
+install_and_load_packages(packages)
+
+```
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+
+```
+
+## Set working directories
+
+```{r}
+current_dir<- getwd()
+
+data_dir <-paste0(current_dir,'/../data/')
+data_files <-list.files(path = data_dir, full.names = TRUE, pattern="*.csv")
+print(paste0('we have data from ',length(data_files),' participants'))
+
+
+
+```
+
+## Load in data and filter our texture ids
+
+```{r}
+
+df_list <- lapply(data_files, read.csv)
+
+experiment_data_raw<- bind_rows(df_list)
+ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-response')
+ratings_trials_exp<- ratings_trials %>% filter(practiceTrial != 'true')
+
+ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
+ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
+
+
+
+extract_texture_id<-function(filename){
+  f<- str_split_i(filename,"/",2)
+  f<- str_split_i(f,".png",1)
+  return(f)
+  
+}
+
+ratings_trials_exp$texture <- lapply(ratings_trials_exp$texture_id,extract_texture_id)
+
+
+unique_sona_ids <- unique(ratings_trials_exp$sona_id)
+cat(paste(unique_sona_ids, collapse = ", "))
+```
+
+```{r}
+t<-ratings_trials_exp %>%
+  group_by(condition_num) %>%
+  summarise(unique_subjects = n_distinct(subject_id))
+
+concept_groups <- ratings_trials_exp %>% 
+  select(concept, condition_num) %>% 
+  distinct() %>% 
+  arrange(condition_num)
+```
+
