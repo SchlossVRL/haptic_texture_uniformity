@@ -8,7 +8,7 @@ editor: visual
 
 ```{r}
 # List of packages
-packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "ggimage","dplyr","tidyverse","knitr")
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "ggimage","dplyr","tidyverse","knitr", "jsonlite")
 
 
 ```
@@ -58,26 +58,41 @@ print(paste0('we have data from ',length(data_files),' participants'))
 df_list <- lapply(data_files, read.csv)
 
 experiment_data_raw<- bind_rows(df_list)
-ratings_trials<- experiment_data_raw %>% filter(trial_type== 'html-slider-response')
-ratings_trials_exp<- ratings_trials %>% filter(practiceTrial != 'true')
-
-ratings_trials_exp$response<- as.numeric(ratings_trials_exp$response)
-ratings_trials_exp$response<- (ratings_trials_exp$response + 200)/400
+ratings_trials<- experiment_data_raw %>% filter(trial_type== 'survey-text')
 
 
-
-extract_texture_id<-function(filename){
-  f<- str_split_i(filename,"/",2)
-  f<- str_split_i(f,".png",1)
-  return(f)
-  
-}
-
-ratings_trials_exp$texture <- lapply(ratings_trials_exp$texture_id,extract_texture_id)
+#correct recorded errors
+# participant 20 texture d15 response should be 2.5
 
 
-unique_sona_ids <- unique(ratings_trials_exp$sona_id)
-cat(paste(unique_sona_ids, collapse = ", "))
+#### For now leaving as is and just removing NAs, but fix later once code works
+
+ratings_trials_exp <- ratings_trials %>%
+  mutate(response = map_chr(response, ~ fromJSON(.x)$Q0)) %>%
+  mutate(response = as.numeric(response)) %>%
+  filter(!is.na(response))  # Optionally remove rows with NA responses
+
+
+# extract_texture_id<-function(filename){
+#   f<- str_split_i(filename,"/",2)
+#   f<- str_split_i(f,".png",1)
+#   return(f)
+#   
+# }
+
+#ratings_trials_exp$texture <- lapply(ratings_trials_exp$texture_id,extract_texture_id)
+
+
+# Create condition_num column based on texture list
+ratings_trials_exp <- ratings_trials_exp %>%
+  mutate(condition_num = case_when(
+    list_name == "textures_list1" ~ 1,
+    list_name == "textures_list2" ~ 2,
+    list_name == "textures_list3" ~ 3
+  ))
+
+# unique_sona_ids <- unique(ratings_trials_exp$sona_id)
+# cat(paste(unique_sona_ids, collapse = ", "))
 ```
 
 ```{r}
@@ -85,9 +100,180 @@ t<-ratings_trials_exp %>%
   group_by(condition_num) %>%
   summarise(unique_subjects = n_distinct(subject_id))
 
-concept_groups <- ratings_trials_exp %>% 
-  select(concept, condition_num) %>% 
+texture_groups <- ratings_trials_exp %>% 
+  select(texture, condition_num) %>% 
   distinct() %>% 
   arrange(condition_num)
 ```
 
+```{r}
+
+bootstrap_ratings<- function(ratings_df, sample_size){
+  
+  group1ids<- ratings_df %>%
+  group_by(condition_num) %>%
+  sample_n(sample_size,replace = TRUE)%>%select(subject_id)
+  
+  group2ids <- ratings_df %>%
+  # filter(!subject_id %in% group1ids$subject_id) %>%
+  group_by(condition_num) %>%
+  sample_n(sample_size, replace = TRUE) %>%
+  select(subject_id)
+  
+  group1df<-ratings_df%>%filter(subject_id%in%group1ids$subject_id)
+  group2df<-ratings_df%>%filter(subject_id%in%group2ids$subject_id)
+  
+  group1mat<- group1df%>% group_by(texture) %>%summarise(mean_rating = mean(response),.groups='keep')%>%
+  pivot_wider(names_from = texture, values_from = mean_rating)
+  group2mat<- group2df%>% group_by(texture) %>%summarise(mean_rating = mean(response),.groups='keep')%>%
+  pivot_wider(names_from = texture, values_from = mean_rating)
+  
+  #concept_names <- group1mat$concept # Preserve concept names in correct order for later
+  
+  #group1mat <- group1mat[order(group1mat$concept), -1]  # Remove concept column
+  #group2mat <- group2mat[order(group2mat$concept), -1]  # Remove concept column
+  
+  common_columns <- intersect(colnames(group1mat), colnames(group2mat))  # Find common columns
+  group1mat <- group1mat[, sort(common_columns)]
+  group2mat <- group2mat[, sort(common_columns)]
+  
+  rowwise_correlations <- mapply(function(row1, row2) {
+    cor(row1, row2, use = "pairwise.complete.obs")
+  }, as.data.frame(t(group1mat)), as.data.frame(t(group2mat)))
+  
+  # # Create dataframe of concept-wise correlations
+  # correlation_df <- data.frame(
+  #   concept = concept_names,
+  #   correlation = rowwise_correlations
+  # )
+  
+  # Compute mean correlation
+  mean_correlation <- mean(rowwise_correlations, na.rm = TRUE)
+  
+  return(mean_correlation)
+
+  
+}
+
+
+
+```
+
+```{r}
+iters<-numeric()
+sample_sizes<-numeric()
+mean_rs<-numeric()
+#correlation_dfs<-list()
+for(iter in 1:100){
+for(sample_size in seq(5, 50, by = 5)){
+  result <- bootstrap_ratings(ratings_trials_exp, sample_size)
+  mean_rs <- c(mean_rs, result)
+  #correlation_dfs[[length(correlation_dfs) + 1]] <- result$correlation_df
+  iters <- c(iters, iter)
+  sample_sizes <- c(sample_sizes, sample_size)
+
+}
+}
+
+
+bootstrap_df <- data.frame(cbind( iters,sample_sizes,mean_rs
+))
+colnames(bootstrap_df)<- c('iteration','sample_size','mean_reliability')
+
+
+
+# Summarize data to calculate mean and standard error for each sample_size
+summary_results <-bootstrap_df %>%
+    group_by(sample_size) %>%
+    summarise(
+        se_reliability = sd(mean_reliability, na.rm = TRUE) / sqrt(n()),
+        mean_reliability = mean(mean_reliability, na.rm = TRUE),
+       
+    )
+
+# Create ggplots
+ggplot(summary_results, aes(x = sample_size, y = mean_reliability)) +
+  geom_line(color = "blue") +
+  geom_ribbon(aes(ymin = mean_reliability - se_reliability,
+                  ymax = mean_reliability + se_reliability),
+              alpha = 0.1, fill = "red") +
+  labs(
+    title = "Mean Reliability Across Sample Sizes",
+    x = "Sample Size",
+    y = "Mean Reliability"
+  ) +
+  theme_minimal()
+```
+
+##Determining Subset
+```{r}
+#Confidence Intervals
+ci_data <- ratings_trials_exp %>%
+  group_by(texture) %>%
+  summarise(
+    mean_rating = mean(response, na.rm = TRUE),
+    ci_lower = mean(response, na.rm = TRUE) - qt(0.975, df = n() - 1) * sd(response, na.rm = TRUE) / sqrt(n()),
+    ci_upper = mean(response, na.rm = TRUE) + qt(0.975, df = n() - 1) * sd(response, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"  # Drop grouping after summarize
+  )
+
+# View the confidence intervals
+print(ci_data)
+
+ci_data <- ci_data %>% 
+  arrange(desc(mean_rating))
+```
+
+```{r}
+#Error
+error_data <- ratings_trials_exp %>%
+  group_by(texture) %>%
+  summarise(
+    mean_rating = mean(response, na.rm = TRUE),
+    se = sd(response, na.rm = TRUE) / sqrt(n()),  # Standard error of the mean
+    error_lower = mean_rating - se,               # Lower bound for error bars
+    error_upper = mean_rating + se,               # Upper bound for error bars
+    .groups = "drop"  # Drop grouping after summarize
+  )
+
+# View the error bars
+print(error_data)
+
+# Arrange data by mean rating in descending order
+error_data <- error_data %>% 
+  arrange(desc(mean_rating))
+
+```
+
+```{r}
+# ci
+ggplot(ci_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.5, color = "darkblue") +
+  labs(
+    title = "Average Uniformity Ratings by Texture",
+    x = "Image",
+    y = "Average Uniformity Rating"
+  ) +
+  theme_minimal() +
+  theme(
+    #axis.text.x = element_blank(),  # Remove x-axis text labels
+    #axis.ticks.x = element_blank()   # Remove x-axis ticks
+  )
+```
+
+```{r}
+ggplot(error_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
+  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_errorbar(aes(ymin = error_lower, ymax = error_upper), width = .5, color = "darkblue") +
+  labs(
+    title = "Average Uniformity Ratings by Texture",
+    x = "Image",
+    y = "Average Uniformity Rating"
+  ) +
+  theme_minimal() +
+  theme(
+    #axis.text.x = element_blank(),  # Remove x-axis text labels
+    #axis.ticks.x = element_blank()   # Remove x-axis ticks
+  )
+```
