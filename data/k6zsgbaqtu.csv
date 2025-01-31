@@ -1,0 +1,65 @@
+"success","timeout","failed_images","failed_audio","failed_video","trial_type","trial_index","time_elapsed","internal_node_id","subject_id","participant_id","list_name","rt","stimulus","response","texture"
+"true","false","[]","[]","[]","preload","0","1","0.0-0.0","k6zsgbaqtu","30","textures_list1","","","",""
+"","","","","","html-button-response","1","2084","0.0-1.0","k6zsgbaqtu","30","textures_list1","2082","<div style='text-align:center; font-size:20px; line-height:25px; width: 1200px;'>
+                Welcome to our experiment! <br>
+                <br>At the bottom of this screen, you will see a button that says 'Begin Experiment.
+                <br>Please only click that button when you are ready to complete the 25 minute experiment in one sitting. <br>
+                <br> Once you click that button, it will not be possible to restart the experiment. <br><br>","0",""
+"true","","","","","fullscreen","2","3993","0.0-2.0","k6zsgbaqtu","30","textures_list1","903","","",""
+"","","","","","html-button-response","3","160907","0.0-3.0","k6zsgbaqtu","30","textures_list1","156914","
+        <div style=""width:100%; display:flex; justify-content:center; align-items: flex-start; height: auto; flex-direction: column; margin-top: 80px; margin-bottom: 50px;"">
+
+            <!-- Centered Header Text -->
+            <div style=""width:1200px; text-align:left; font-size:24px; margin-top: auto; margin-left: 80px;"">
+                During this experiment, you will be presented with a series of texture tiles like this one (hold up smooth tile to show them).
+                <br><br> In front of you is a box with 9 texture tiles layed out in 3 rows of three. Please take a moment to feel each of these texture tiles as I explain your task.
+                <br><br> During this experiment, you will feel a series of textures, one at a time, like the ones you are feeling now.
+                <br><br> Some of the textures will feel very 'uniform,' which means they feel similar across the whole surface of the tile.
+                <br> And some of the textures will feel very 'non-uniform,' which means they feel different in different parts of the tile.
+                <br><br> Your task is to rate how uniform the texture feels on a scale from 1 indicating they are 'not at all uniform' to 7 indicating they are 'very much uniform'.
+                <br><br> So you know what 'very much uniform' and 'not at all uniform' means to you in the context of these textures, please think about which textures in front of you, you consider 'very much uniform,' and which textures you consider 'not at all uniform.'
+                <br><br> You will be asked to rate each texture on its uniformity by verbally stating a number on a scale from 1 to 7. Please make your rating based on your initial intuitions for each texture.
+                <br><br> Please be sure to feel the entire texture tile as you make your ratings and use the full range of the scale in your ratings.
+                <br><br> Do you have any questions before we begin?
+            </div>
+        ","0",""
+"","","","","","html-keyboard-response","4","167244","0.0-4.0","k6zsgbaqtu","30","textures_list1","6335","<p>You have been assigned to <strong>textures_list1</strong>.</p>
+               <p>Press any key to begin the experiment.</p>","enter",""
+"","","","","","survey-text","5","202260","0.0-5.0","k6zsgbaqtu","30","textures_list1","35015","","{""Q0"":""5""}","D58"
+"","","","","","survey-text","6","223444","0.0-6.0","k6zsgbaqtu","30","textures_list1","21182","","{""Q0"":""6""}","D49"
+"","","","","","survey-text","7","238139","0.0-7.0","k6zsgbaqtu","30","textures_list1","14694","","{""Q0"":""5""}","D96"
+"","","","","","survey-text","8","255428","0.0-8.0","k6zsgbaqtu","30","textures_list1","17286","","{""Q0"":""4""}","D111"
+"","","","","","survey-text","9","283187","0.0-9.0","k6zsgbaqtu","30","textures_list1","27758","","{""Q0"":""6""}","D43*"
+"","","","","","survey-text","10","295811","0.0-10.0","k6zsgbaqtu","30","textures_list1","12622","","{""Q0"":""5""}","D94"
+"","","","","","survey-text","11","315987","0.0-11.0","k6zsgbaqtu","30","textures_list1","20174","","{""Q0"":""4""}","D83"
+"","","","","","survey-text","12","328971","0.0-12.0","k6zsgbaqtu","30","textures_list1","12982","","{""Q0"":""5""}","D106"
+"","","","","","survey-text","13","343147","0.0-13.0","k6zsgbaqtu","30","textures_list1","14174","","{""Q0"":""5""}","D80"
+"","","","","","survey-text","14","356019","0.0-14.0","k6zsgbaqtu","30","textures_list1","12870","","{""Q0"":""4""}","D18"
+"","","","","","survey-text","15","371203","0.0-15.0","k6zsgbaqtu","30","textures_list1","15182","","{""Q0"":""6""}","D79"
+"","","","","","survey-text","16","390243","0.0-16.0","k6zsgbaqtu","30","textures_list1","19039","","{""Q0"":""6""}","D21"
+"","","","","","survey-text","17","414498","0.0-17.0","k6zsgbaqtu","30","textures_list1","24254","","{""Q0"":""4""}","D92"
+"","","","","","survey-text","18","428986","0.0-18.0","k6zsgbaqtu","30","textures_list1","14486","","{""Q0"":""4""}","D110"
+"","","","","","survey-text","19","444826","0.0-19.0","k6zsgbaqtu","30","textures_list1","15838","","{""Q0"":""3""}","D72"
+"","","","","","survey-text","20","459402","0.0-20.0","k6zsgbaqtu","30","textures_list1","14574","","{""Q0"":""3""}","D62"
+"","","","","","survey-text","21","478418","0.0-21.0","k6zsgbaqtu","30","textures_list1","19014","","{""Q0"":""5""}","D25"
+"","","","","","survey-text","22","496338","0.0-22.0","k6zsgbaqtu","30","textures_list1","17918","","{""Q0"":""5""}","D81"
+"","","","","","survey-text","23","509826","0.0-23.0","k6zsgbaqtu","30","textures_list1","13486","","{""Q0"":""6""}","D104"
+"","","","","","survey-text","24","536626","0.0-24.0","k6zsgbaqtu","30","textures_list1","26798","","{""Q0"":""5""}","D42"
+"","","","","","survey-text","25","554746","0.0-25.0","k6zsgbaqtu","30","textures_list1","18118","","{""Q0"":""4""}","D86"
+"","","","","","survey-text","26","573697","0.0-26.0","k6zsgbaqtu","30","textures_list1","18950","","{""Q0"":""4""}","D66"
+"","","","","","survey-text","27","589257","0.0-27.0","k6zsgbaqtu","30","textures_list1","15558","","{""Q0"":""3""}","D70"
+"","","","","","survey-text","28","603385","0.0-28.0","k6zsgbaqtu","30","textures_list1","14126","","{""Q0"":""6""}","D34"
+"","","","","","survey-text","29","627689","0.0-29.0","k6zsgbaqtu","30","textures_list1","24302","","{""Q0"":""5""}","D68"
+"","","","","","survey-text","30","644785","0.0-30.0","k6zsgbaqtu","30","textures_list1","17095","","{""Q0"":""5""}","D69"
+"","","","","","survey-text","31","717697","0.0-31.0","k6zsgbaqtu","30","textures_list1","72911","","{""Q0"":""2""}","D26"
+"","","","","","survey-text","32","737257","0.0-32.0","k6zsgbaqtu","30","textures_list1","19558","","{""Q0"":""3""}","D89"
+"","","","","","survey-text","33","750464","0.0-33.0","k6zsgbaqtu","30","textures_list1","13206","","{""Q0"":""3""}","D35"
+"","","","","","survey-text","34","768496","0.0-34.0","k6zsgbaqtu","30","textures_list1","18030","","{""Q0"":""5""}","D36"
+"","","","","","survey-text","35","787168","0.0-35.0","k6zsgbaqtu","30","textures_list1","18670","","{""Q0"":""5""}","D78"
+"","","","","","survey-text","36","804992","0.0-36.0","k6zsgbaqtu","30","textures_list1","17822","","{""Q0"":""6""}","D6*"
+"","","","","","survey-text","37","825096","0.0-37.0","k6zsgbaqtu","30","textures_list1","20102","","{""Q0"":""4""}","D3*"
+"","","","","","survey-text","38","837232","0.0-38.0","k6zsgbaqtu","30","textures_list1","12134","","{""Q0"":""3""}","D20"
+"","","","","","survey-text","39","858920","0.0-39.0","k6zsgbaqtu","30","textures_list1","21686","","{""Q0"":""3""}","D64"
+"","","","","","survey-text","40","874104","0.0-40.0","k6zsgbaqtu","30","textures_list1","15182","","{""Q0"":""5""}","D2"
+"","","","","","survey-text","41","891672","0.0-41.0","k6zsgbaqtu","30","textures_list1","17566","","{""Q0"":""4""}","D88"
+"","","","","","survey-text","42","920063","0.0-42.0","k6zsgbaqtu","30","textures_list1","28390","","{""Q0"":""4""}","D8"

@@ -7,8 +7,10 @@ editor: visual
 ### Load packages
 
 ```{r}
+#rm(list = ls())
+
 # List of packages
-packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "ggimage","dplyr","tidyverse","knitr", "jsonlite")
+packages <- c("corrr", "ggplot2", "lme4", "lmerTest", "FactoMineR", "grid","png","cowplot","magick", "ggimage","dplyr","tidyverse","knitr", "jsonlite", "skimr")
 
 
 ```
@@ -65,6 +67,7 @@ ratings_trials<- experiment_data_raw %>% filter(trial_type== 'survey-text')
 # participant 20 texture d15 response should be 2.5
 
 
+
 #### For now leaving as is and just removing NAs, but fix later once code works
 
 ratings_trials_exp <- ratings_trials %>%
@@ -93,6 +96,11 @@ ratings_trials_exp <- ratings_trials_exp %>%
 
 # unique_sona_ids <- unique(ratings_trials_exp$sona_id)
 # cat(paste(unique_sona_ids, collapse = ", "))
+
+# get rid of error entry
+ratings_trials_exp <- ratings_trials_exp %>%
+  filter(response <= 7)
+
 ```
 
 ```{r}
@@ -205,7 +213,83 @@ ggplot(summary_results, aes(x = sample_size, y = mean_reliability)) +
   theme_minimal()
 ```
 
+##By group
+
+```{r}
+
+# Initialize lists to store results
+iters <- numeric()
+sample_sizes <- numeric()
+mean_rs <- numeric()
+groups <- character()  # Store group information
+
+# Specify the grouping column
+group_column <- "condition_num"  # Change to your desired grouping column
+
+# Loop over each group
+for (group in unique(ratings_trials_exp[[group_column]])) {
+  group_data <- ratings_trials_exp %>%
+    filter(!!sym(group_column) == group)  # Filter data for the group
+  
+  for (iter in 1:100) {
+    for (sample_size in seq(5, 50, by = 5)) {
+      # Run bootstrap_ratings for this group and sample size
+      result <- bootstrap_ratings(group_data, sample_size)
+      
+      # Store the results
+      mean_rs <- c(mean_rs, result)
+      iters <- c(iters, iter)
+      sample_sizes <- c(sample_sizes, sample_size)
+      groups <- c(groups, group)
+    }
+  }
+}
+
+# Combine results into a data frame
+bootstrap_df <- data.frame(iters, sample_sizes, mean_rs, groups)
+colnames(bootstrap_df) <- c('iteration', 'sample_size', 'mean_reliability', 'group')
+
+# Summarize results by group and sample size
+summary_results <- bootstrap_df %>%
+  group_by(group, sample_size) %>%
+  summarise(
+    se_reliability = sd(mean_reliability, na.rm = TRUE) / sqrt(n()),
+    mean_reliability = mean(mean_reliability, na.rm = TRUE),
+    .groups = 'drop'
+  )
+
+# Create ggplot grouped by group
+ggplot(summary_results, aes(x = sample_size, y = mean_reliability, color = group)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = mean_reliability - se_reliability,
+                  ymax = mean_reliability + se_reliability,
+                  fill = group),
+              alpha = 0.1) +
+  labs(
+    title = "Mean Reliability Across Sample Sizes by Group",
+    x = "Sample Size",
+    y = "Mean Reliability"
+  ) +
+  theme_minimal() +
+  ylim(0, 1)
+
+# #Group 1
+# group1 <- ratings_trials_exp %>%
+#   filter(condition_num == 1)
+# 
+# #Group 2
+# group2 <- ratings_trials_exp %>%
+#   filter(condition_num == 2)
+# 
+# #Group 3
+# group3 <- ratings_trials_exp %>%
+#   filter(condition_num == 3)
+
+
+```
+
 ##Determining Subset
+
 ```{r}
 #Confidence Intervals
 ci_data <- ratings_trials_exp %>%
@@ -222,6 +306,12 @@ print(ci_data)
 
 ci_data <- ci_data %>% 
   arrange(desc(mean_rating))
+
+ci_data
+ci_data_reduced <- ci_data %>%
+  filter(mean_rating >= 4) %>% 
+  select(texture)
+write_csv(ci_data_reduced, "ci_data.csv")
 ```
 
 ```{r}
@@ -243,6 +333,11 @@ print(error_data)
 error_data <- error_data %>% 
   arrange(desc(mean_rating))
 
+error_data
+error_data_reduced <- error_data %>%
+  filter(mean_rating >= 4) %>% 
+  select(texture)
+write_csv(error_data_reduced, "error_data.csv")
 ```
 
 ```{r}
@@ -256,10 +351,13 @@ ggplot(ci_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
     y = "Average Uniformity Rating"
   ) +
   theme_minimal() +
+  #scale_y_continuous(limits = c(1, 7), breaks = seq(1, 7, 1)) +
   theme(
     #axis.text.x = element_blank(),  # Remove x-axis text labels
     #axis.ticks.x = element_blank()   # Remove x-axis ticks
-  )
+  )+
+  #ylim(1, 7)
+  coord_cartesian(ylim = c(1, 7))
 ```
 
 ```{r}
@@ -272,8 +370,11 @@ ggplot(error_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
     y = "Average Uniformity Rating"
   ) +
   theme_minimal() +
+  #scale_y_continuous(limits = c(1, 7), breaks = seq(1, 7, 1)) +
   theme(
     #axis.text.x = element_blank(),  # Remove x-axis text labels
     #axis.ticks.x = element_blank()   # Remove x-axis ticks
-  )
+  ) +
+  #ylim(1, 7)
+  coord_cartesian(ylim = c(1, 7))
 ```
