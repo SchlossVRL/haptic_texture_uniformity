@@ -115,6 +115,16 @@ texture_groups <- ratings_trials_exp %>%
 ```
 
 ```{r}
+#later for testing split half correlations
+colnames(t) <- c("condition_num", "unique_subjects")
+t2 <- as.data.frame(t)
+t2 <- t2 %>% 
+  mutate(
+    group = condition_num
+  )
+```
+
+```{r}
 
 bootstrap_ratings<- function(ratings_df, sample_size){
   
@@ -136,11 +146,6 @@ bootstrap_ratings<- function(ratings_df, sample_size){
   group2mat<- group2df%>% group_by(texture) %>%summarise(mean_rating = mean(response),.groups='keep')%>%
   pivot_wider(names_from = texture, values_from = mean_rating)
   
-  #concept_names <- group1mat$concept # Preserve concept names in correct order for later
-  
-  #group1mat <- group1mat[order(group1mat$concept), -1]  # Remove concept column
-  #group2mat <- group2mat[order(group2mat$concept), -1]  # Remove concept column
-  
   common_columns <- intersect(colnames(group1mat), colnames(group2mat))  # Find common columns
   group1mat <- group1mat[, sort(common_columns)]
   group2mat <- group2mat[, sort(common_columns)]
@@ -148,12 +153,6 @@ bootstrap_ratings<- function(ratings_df, sample_size){
   rowwise_correlations <- mapply(function(row1, row2) {
     cor(row1, row2, use = "pairwise.complete.obs")
   }, as.data.frame(t(group1mat)), as.data.frame(t(group2mat)))
-  
-  # # Create dataframe of concept-wise correlations
-  # correlation_df <- data.frame(
-  #   concept = concept_names,
-  #   correlation = rowwise_correlations
-  # )
   
   # Compute mean correlation
   mean_correlation <- mean(rowwise_correlations, na.rm = TRUE)
@@ -167,71 +166,25 @@ bootstrap_ratings<- function(ratings_df, sample_size){
 
 ```
 
-```{r}
-iters<-numeric()
-sample_sizes<-numeric()
-mean_rs<-numeric()
-#correlation_dfs<-list()
-for(iter in 1:100){
-for(sample_size in seq(5, 50, by = 5)){
-  result <- bootstrap_ratings(ratings_trials_exp, sample_size)
-  mean_rs <- c(mean_rs, result)
-  #correlation_dfs[[length(correlation_dfs) + 1]] <- result$correlation_df
-  iters <- c(iters, iter)
-  sample_sizes <- c(sample_sizes, sample_size)
-
-}
-}
-
-
-bootstrap_df <- data.frame(cbind( iters,sample_sizes,mean_rs
-))
-colnames(bootstrap_df)<- c('iteration','sample_size','mean_reliability')
-
-
-
-# Summarize data to calculate mean and standard error for each sample_size
-summary_results <-bootstrap_df %>%
-    group_by(sample_size) %>%
-    summarise(
-        se_reliability = sd(mean_reliability, na.rm = TRUE) / sqrt(n()),
-        mean_reliability = mean(mean_reliability, na.rm = TRUE),
-       
-    )
-
-# Create ggplots
-ggplot(summary_results, aes(x = sample_size, y = mean_reliability)) +
-  geom_line(color = "blue") +
-  geom_ribbon(aes(ymin = mean_reliability - se_reliability,
-                  ymax = mean_reliability + se_reliability),
-              alpha = 0.1, fill = "red") +
-  labs(
-    title = "Mean Reliability Across Sample Sizes",
-    x = "Sample Size",
-    y = "Mean Reliability"
-  ) +
-  theme_minimal()
-```
-
 ##By group
 
 ```{r}
 
 # Initialize lists to store results
 iters <- numeric()
-sample_sizes <- numeric()
+sample_sizes <- numeric() # note the sample sizes are the number of samples taken in bootstrapping sequence, so for that stability the number of participants should be doubled.
 mean_rs <- numeric()
 groups <- character()  # Store group information
 
 # Specify the grouping column
-group_column <- "condition_num"  # Change to your desired grouping column
+group_column <- "condition_num"  
 
 # Loop over each group
 for (group in unique(ratings_trials_exp[[group_column]])) {
   group_data <- ratings_trials_exp %>%
     filter(!!sym(group_column) == group)  # Filter data for the group
   
-  for (iter in 1:100) {
+  for (iter in 1:1000) {
     for (sample_size in seq(5, 50, by = 5)) {
       # Run bootstrap_ratings for this group and sample size
       result <- bootstrap_ratings(group_data, sample_size)
@@ -273,19 +226,182 @@ ggplot(summary_results, aes(x = sample_size, y = mean_reliability, color = group
   theme_minimal() +
   ylim(0, 1)
 
-# #Group 1
-# group1 <- ratings_trials_exp %>%
-#   filter(condition_num == 1)
-# 
-# #Group 2
-# group2 <- ratings_trials_exp %>%
-#   filter(condition_num == 2)
-# 
-# #Group 3
-# group3 <- ratings_trials_exp %>%
-#   filter(condition_num == 3)
+
+```
+
+```{r}
+#compute correlations for current sample sizes in each group
+compute_correlations <- function(ratings_df, condition) {
+  correlation_results <- vector("list", 1000)
+  
+  for (i in 1:1000) {
+    # Randomly split subjects into two groups within the given condition
+    group1ids <- ratings_df %>%
+      filter(condition_num == condition) %>%
+      sample_n(t2 %>% filter(condition_num == condition) %>% pull(unique_subjects) / 2, replace = FALSE) %>%
+      select(subject_id)
+    
+    group2ids <- ratings_df %>%
+      filter(condition_num == condition) %>%
+      filter(!subject_id %in% group1ids$subject_id) %>%
+      sample_n(t2 %>% filter(condition_num == condition) %>% pull(unique_subjects) / 2, replace = FALSE) %>%
+      select(subject_id)
+    
+    # Create data matrices for both groups
+    group1df <- ratings_df %>% filter(subject_id %in% group1ids$subject_id)
+    group2df <- ratings_df %>% filter(subject_id %in% group2ids$subject_id)
+    
+    group1mat <- group1df %>%
+      group_by(texture) %>%
+      summarise(mean_rating = mean(response), .groups = 'keep') %>%
+      pivot_wider(names_from = texture, values_from = mean_rating)
+    
+    group2mat <- group2df %>%
+      group_by(texture) %>%
+      summarise(mean_rating = mean(response), .groups = 'keep') %>%
+      pivot_wider(names_from = texture, values_from = mean_rating)
+    
+    common_columns <- intersect(colnames(group1mat), colnames(group2mat))
+    group1mat <- group1mat[, sort(common_columns)]
+    group2mat <- group2mat[, sort(common_columns)]
+    
+    # Compute correlations
+    rowwise_correlations <- mapply(
+      function(row1, row2) cor(row1, row2, use = "pairwise.complete.obs"),
+      as.data.frame(t(group1mat)), as.data.frame(t(group2mat))
+    )
+    
+    # Store results
+    correlation_results[[i]] <- data.frame(
+      iteration = i,
+      condition_num = condition,  # Store the condition
+      correlation = rowwise_correlations
+    )
+  }
+  
+  return(bind_rows(correlation_results))  # Combine all iterations into a single dataframe
+}
+
+all_conditions <- unique(ratings_trials_exp$condition_num)
+
+all_correlation_results <- bind_rows(lapply(all_conditions, function(cond) {
+  compute_correlations(ratings_trials_exp, cond)
+}))
+
+```
+
+```{r}
+#plotting
+#first add "group" column to all_correlation_results based on condition_num column to match up with summary_resutls from bootstrapping
+
+all_correlation_results <- all_correlation_results %>% 
+  mutate(
+    group = as.character(condition_num)
+  )
+#join with summary_results for plotting
+summary_results_join <- left_join(summary_results, all_correlation_results, by = "group")
+
+#add group participant counts from t2
+t2 <- t2 %>% 
+  mutate(
+    group = as.character(group)
+  )
+
+summary_results_join <- left_join(summary_results_join, t2, by = "group")
+
+#add average correlation per group based on split half correlations
+
+summary_results_join <- summary_results_join %>% 
+  group_by(group) %>% 
+  mutate(
+    split_half_corr = mean(correlation)) %>% 
+  ungroup()
+
+# Plot distribution of correlations for each group
+ggplot(summary_results_join, aes(x = correlation)) +
+  geom_density(fill = "blue", alpha = 0.3) +
+  facet_wrap(~ group, scales = "fixed") +
+  labs(title = "Distribution of Correlations Over 1000 Iterations",
+       x = "Correlation",
+       y = "Density") +
+  theme_minimal()
+
+#combined plot
+
+#use summary results from boostrapping to compare
+#create vertical line each group at current sample size
+#add point for correlation for each group at current sample size
+
+# Create ggplot grouped by group
+ggplot(summary_results_join, aes(x = sample_size, y = mean_reliability, color = group)) +
+  geom_line() +
+  geom_ribbon(aes(ymin = mean_reliability - se_reliability,
+                  ymax = mean_reliability + se_reliability,
+                  fill = group),
+              alpha = 0.1) +
+    geom_vline(
+    data = summary_results_join,
+    aes(xintercept = unique_subjects/2, color = group, group = group),
+    linetype = "dashed"
+  ) +
+  geom_point(
+    data = summary_results_join,
+    aes(x = unique_subjects/2, y = split_half_corr, color = group, group = group)
+  ) +
+  labs(
+    title = "Mean Reliability Across Sample Sizes by Group",
+    x = "Sample Size",
+    y = "Mean Reliability"
+  ) +
+  theme_minimal() +
+  ylim(0, 1)
+
+```
+
+```{r}
+#All together bootstrpping (if desired) ---- Not by group 
+iters<-numeric()
+sample_sizes<-numeric() # note the sample sizes are the number of samples taken in bootstrapping sequence, so for that stability the number of participants should be doubled. 
+mean_rs<-numeric()
+#correlation_dfs<-list()
+for(iter in 1:1000){
+for(sample_size in seq(5, 50, by = 5)){
+  result <- bootstrap_ratings(ratings_trials_exp, sample_size)
+  mean_rs <- c(mean_rs, result)
+  #correlation_dfs[[length(correlation_dfs) + 1]] <- result$correlation_df
+  iters <- c(iters, iter)
+  sample_sizes <- c(sample_sizes, sample_size)
+
+}
+}
 
 
+bootstrap_df <- data.frame(cbind( iters,sample_sizes,mean_rs
+))
+colnames(bootstrap_df)<- c('iteration','sample_size','mean_reliability')
+
+
+# Summarize data to calculate mean and standard error for each sample_size
+summary_results <-bootstrap_df %>%
+    group_by(sample_size) %>%
+    summarise(
+        se_reliability = sd(mean_reliability, na.rm = TRUE) / sqrt(n()),
+        mean_reliability = mean(mean_reliability, na.rm = TRUE),
+       
+    )
+
+# Create ggplots
+ggplot(summary_results, aes(x = sample_size, y = mean_reliability)) +
+  geom_line(color = "blue") +
+  geom_ribbon(aes(ymin = mean_reliability - se_reliability,
+                  ymax = mean_reliability + se_reliability),
+              alpha = 0.1, fill = "red") +
+  labs(
+    title = "Mean Reliability Across Sample Sizes",
+    x = "Sample Size",
+    y = "Mean Reliability"
+  ) +
+  theme_minimal()
 ```
 
 ##Determining Subset
@@ -346,7 +462,7 @@ ggplot(ci_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
   geom_bar(stat = "identity", fill = "skyblue") +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.5, color = "darkblue") +
   labs(
-    title = "Average Uniformity Ratings by Texture",
+    title = "Average Uniformity Ratings by Texture - CI bars",
     x = "Image",
     y = "Average Uniformity Rating"
   ) +
@@ -365,7 +481,7 @@ ggplot(error_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
   geom_bar(stat = "identity", fill = "skyblue") +
   geom_errorbar(aes(ymin = error_lower, ymax = error_upper), width = .5, color = "darkblue") +
   labs(
-    title = "Average Uniformity Ratings by Texture",
+    title = "Average Uniformity Ratings by Texture - Error bars",
     x = "Image",
     y = "Average Uniformity Rating"
   ) +
