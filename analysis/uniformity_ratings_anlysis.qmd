@@ -451,7 +451,7 @@ error_data <- error_data %>%
 
 error_data
 error_data_reduced <- error_data %>%
-  filter(mean_rating >= 4) %>% 
+  filter(error_lower >= 4) %>% 
   select(texture)
 write_csv(error_data_reduced, "error_data.csv")
 ```
@@ -459,7 +459,7 @@ write_csv(error_data_reduced, "error_data.csv")
 ```{r}
 # ci
 ggplot(ci_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
+  geom_point(size = 3, color = "skyblue") +
   geom_errorbar(aes(ymin = ci_lower, ymax = ci_upper), width = 0.5, color = "darkblue") +
   labs(
     title = "Average Uniformity Ratings by Texture - CI bars",
@@ -478,8 +478,8 @@ ggplot(ci_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
 
 ```{r}
 ggplot(error_data, aes(x = reorder(texture, -mean_rating), y = mean_rating)) +
-  geom_bar(stat = "identity", fill = "skyblue") +
   geom_errorbar(aes(ymin = error_lower, ymax = error_upper), width = .5, color = "darkblue") +
+  geom_point(size = 3, color = "skyblue") +
   labs(
     title = "Average Uniformity Ratings by Texture - Error bars",
     x = "Image",
